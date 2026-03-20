@@ -1,5 +1,5 @@
 {
-  "name": "easy-git",
+  "name": "git-blms",
   "displayName": "GitBlms",
   "description": "%extension.description%",
   "version": "1.0.0",
@@ -36,38 +36,38 @@
   "markdown": "github",
   "activationEvents": [
     "onStartupFinished",
-    "onCommand:easy-git.toggleBlame",
-    "onCommand:easy-git.showBlame",
-    "onCommand:easy-git.hideBlame",
-    "onCommand:easy-git.openCommitDetails"
+    "onCommand:git-blms.toggleBlame",
+    "onCommand:git-blms.showBlame",
+    "onCommand:git-blms.hideBlame",
+    "onCommand:git-blms.openCommitDetails"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "easy-git.toggleBlame",
+        "command": "git-blms.toggleBlame",
         "title": "%command.toggleBlame.title%",
         "category": "Git"
       },
       {
-        "command": "easy-git.showBlame",
+        "command": "git-blms.showBlame",
         "title": "%command.showBlame.title%",
         "category": "Git"
       },
       {
-        "command": "easy-git.hideBlame",
+        "command": "git-blms.hideBlame",
         "title": "%command.hideBlame.title%",
         "category": "Git"
       },
       {
-        "command": "easy-git.openCommitDetails",
+        "command": "git-blms.openCommitDetails",
         "title": "%command.openCommitDetails.title%",
         "category": "Git"
       }
     ],
     "keybindings": [
       {
-        "command": "easy-git.toggleBlame",
+        "command": "git-blms.toggleBlame",
         "key": "ctrl+alt+b",
         "mac": "cmd+alt+b",
         "when": "editorTextFocus"
@@ -76,30 +76,30 @@
     "menus": {
       "editor/context": [
         {
-          "command": "easy-git.showBlame",
-          "when": "resourceScheme == file && !easyGit.enabled",
+          "command": "git-blms.showBlame",
+          "when": "resourceScheme == file && !gitBlms.enabled",
           "group": "navigation@git-blame"
         },
         {
-          "command": "easy-git.hideBlame",
-          "when": "resourceScheme == file && easyGit.enabled",
+          "command": "git-blms.hideBlame",
+          "when": "resourceScheme == file && gitBlms.enabled",
           "group": "navigation@git-blame"
         },
         {
-          "command": "easy-git.openCommitDetails",
-          "when": "resourceScheme == file && easyGit.enabled",
+          "command": "git-blms.openCommitDetails",
+          "when": "resourceScheme == file && gitBlms.enabled",
           "group": "navigation@git-blame"
         }
       ],
       "editor/lineNumber/context": [
         {
-          "command": "easy-git.showBlame",
-          "when": "resourceScheme == file && !easyGit.enabled",
+          "command": "git-blms.showBlame",
+          "when": "resourceScheme == file && !gitBlms.enabled",
           "group": "navigation@git-blame"
         },
         {
-          "command": "easy-git.hideBlame",
-          "when": "resourceScheme == file && easyGit.enabled",
+          "command": "git-blms.hideBlame",
+          "when": "resourceScheme == file && gitBlms.enabled",
           "group": "navigation@git-blame"
         }
       ]
@@ -107,12 +107,12 @@
     "configuration": {
       "title": "%configuration.title%",
       "properties": {
-        "easy-git.enabled": {
+        "git-blms.enabled": {
           "type": "boolean",
           "default": false,
           "description": "%config.enabled.description%"
         },
-        "easy-git.colorScheme": {
+        "git-blms.colorScheme": {
           "type": "string",
           "default": "blue",
           "enum": [
@@ -122,7 +122,7 @@
           ],
           "description": "%config.colorScheme.description%"
         },
-        "easy-git.dateFormat": {
+        "git-blms.dateFormat": {
           "type": "string",
           "default": "absolute",
           "enum": [
@@ -131,35 +131,35 @@
           ],
           "description": "%config.dateFormat.description%"
         },
-        "easy-git.maxLineCount": {
+        "git-blms.maxLineCount": {
           "type": "number",
           "default": 5000,
           "minimum": 1,
           "description": "%config.maxLineCount.description%"
         },
-        "easy-git.cacheTimeout": {
+        "git-blms.cacheTimeout": {
           "type": "number",
           "default": 60000,
           "minimum": 0,
           "description": "%config.cacheTimeout.description%"
         },
-        "easy-git.maxAnnotationWidth": {
+        "git-blms.maxAnnotationWidth": {
           "type": "number",
           "default": 22,
           "minimum": 8,
           "description": "%config.maxAnnotationWidth.description%"
         },
-        "easy-git.uncommittedColor": {
+        "git-blms.uncommittedColor": {
           "type": "string",
           "default": "46,160,67",
           "description": "%config.uncommittedColor.description%"
         },
-        "easy-git.currentAuthorColor": {
+        "git-blms.currentAuthorColor": {
           "type": "string",
           "default": "",
           "description": "%config.currentAuthorColor.description%"
         },
-        "easy-git.language": {
+        "git-blms.language": {
           "type": "string",
           "default": "auto",
           "enum": [

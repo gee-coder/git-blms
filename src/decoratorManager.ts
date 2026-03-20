@@ -15,7 +15,7 @@ import {
 } from "./colorCalculator";
 import { resolveDisplayLanguage, t } from "./i18n";
 import { formatCompactTimestamp, formatFullDateTime } from "./relativeTime";
-import type { BlameLineInfo, EasyGitConfig, GitAuthorIdentity } from "./types";
+import type { BlameLineInfo, GitAuthorIdentity, GitBlmsConfig } from "./types";
 
 const REFRESH_DELAY_MS = 250;
 const COLUMN_HORIZONTAL_PADDING_CH = 0.45;
@@ -169,7 +169,7 @@ export class DecoratorManager implements vscode.Disposable {
   private createDecorationOption(
     document: vscode.TextDocument,
     line: BlameLineInfo,
-    config: EasyGitConfig,
+    config: GitBlmsConfig,
     locale: string,
     language: ReturnType<typeof resolveDisplayLanguage>,
     annotationWidth: string,
@@ -260,7 +260,7 @@ function getAnnotationRange(textLine: vscode.TextLine): vscode.Range {
 function buildAnnotationText(
   line: BlameLineInfo,
   timestampMs: number,
-  config: EasyGitConfig,
+  config: GitBlmsConfig,
   locale: string,
   language: ReturnType<typeof resolveDisplayLanguage>
 ): string {
@@ -270,7 +270,7 @@ function buildAnnotationText(
 }
 
 function buildUncommittedAnnotationText(
-  config: EasyGitConfig,
+  config: GitBlmsConfig,
   locale: string,
   language: ReturnType<typeof resolveDisplayLanguage>
 ): string {
@@ -321,7 +321,7 @@ function escapeMarkdown(value: string): string {
 
 function calculateAnnotationWidth(
   lines: BlameLineInfo[],
-  config: EasyGitConfig,
+  config: GitBlmsConfig,
   locale: string,
   language: ReturnType<typeof resolveDisplayLanguage>
 ): string {

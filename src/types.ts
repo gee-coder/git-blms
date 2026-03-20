@@ -2,7 +2,7 @@ export type ColorScheme = "blue" | "green" | "purple";
 export type DateFormat = "relative" | "absolute";
 export type DisplayLanguage = "auto" | "zh-CN" | "en";
 
-export interface EasyGitConfig {
+export interface GitBlmsConfig {
   enabled: boolean;
   colorScheme: ColorScheme;
   dateFormat: DateFormat;

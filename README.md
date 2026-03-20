@@ -53,15 +53,15 @@ Default keybinding:
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `easy-git.enabled` | `false` | Enables inline blame annotations globally |
-| `easy-git.colorScheme` | `"blue"` | Annotation palette: `blue`, `green`, `purple` |
-| `easy-git.dateFormat` | `"absolute"` | `relative` or `absolute` timestamp display |
-| `easy-git.maxLineCount` | `5000` | Skip blame rendering for very large files |
-| `easy-git.cacheTimeout` | `60000` | Blame cache lifetime in milliseconds |
-| `easy-git.maxAnnotationWidth` | `22` | Maximum width of the blame column in `ch` |
-| `easy-git.uncommittedColor` | `"46,160,67"` | Color for uncommitted lines. Supports CSV, `rgb(...)`, and hex |
-| `easy-git.currentAuthorColor` | `""` | Optional highlight color for lines authored by the current Git user. Keeps age buckets and leaves the feature disabled when empty |
-| `easy-git.language` | `"auto"` | UI language: `auto`, `zh-CN`, `en` |
+| `git-blms.enabled` | `false` | Enables inline blame annotations globally |
+| `git-blms.colorScheme` | `"blue"` | Annotation palette: `blue`, `green`, `purple` |
+| `git-blms.dateFormat` | `"absolute"` | `relative` or `absolute` timestamp display |
+| `git-blms.maxLineCount` | `5000` | Skip blame rendering for very large files |
+| `git-blms.cacheTimeout` | `60000` | Blame cache lifetime in milliseconds |
+| `git-blms.maxAnnotationWidth` | `22` | Maximum width of the blame column in `ch` |
+| `git-blms.uncommittedColor` | `"46,160,67"` | Color for uncommitted lines. Supports CSV, `rgb(...)`, and hex |
+| `git-blms.currentAuthorColor` | `""` | Optional highlight color for lines authored by the current Git user. Keeps age buckets and leaves the feature disabled when empty |
+| `git-blms.language` | `"auto"` | UI language: `auto`, `zh-CN`, `en` |
 
 ## Notes
 

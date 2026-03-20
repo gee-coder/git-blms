@@ -2,7 +2,7 @@ import * as fs from "node:fs/promises";
 import * as vscode from "vscode";
 import { GitService } from "./gitService";
 import { formatTooLargeSkipReason, resolveDisplayLanguage, t } from "./i18n";
-import type { BlameLookupResult, BlameResult, EasyGitConfig } from "./types";
+import type { BlameLookupResult, BlameResult, GitBlmsConfig } from "./types";
 
 interface CacheEntry {
   expiresAt: number;
@@ -15,7 +15,7 @@ export class BlameManager {
 
   constructor(private readonly gitService: GitService) {}
 
-  async getBlame(document: vscode.TextDocument, config: EasyGitConfig): Promise<BlameLookupResult> {
+  async getBlame(document: vscode.TextDocument, config: GitBlmsConfig): Promise<BlameLookupResult> {
     const locale = vscode.env.language || Intl.DateTimeFormat().resolvedOptions().locale;
     const language = resolveDisplayLanguage(config.language, locale);
 
@@ -71,7 +71,7 @@ export class BlameManager {
 
   private async loadBlame(
     document: vscode.TextDocument,
-    config: EasyGitConfig,
+    config: GitBlmsConfig,
     cacheKey: string,
     language: ReturnType<typeof resolveDisplayLanguage>
   ): Promise<BlameLookupResult> {

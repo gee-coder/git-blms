@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { BlameManager } from "./blameManager";
 import {
-  affectsEasyGitConfiguration,
+  affectsGitBlmsConfiguration,
   COMMAND_HIDE_BLAME,
   COMMAND_OPEN_COMMIT_DETAILS,
   COMMAND_SHOW_BLAME,
@@ -72,7 +72,6 @@ export function activate(context: vscode.ExtensionContext): void {
       );
     }
   });
-
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
       void decoratorManager.refreshEditor(editor);
@@ -90,7 +89,7 @@ export function activate(context: vscode.ExtensionContext): void {
       decoratorManager.handleDocumentClosed(document);
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (!affectsEasyGitConfiguration(event)) {
+      if (!affectsGitBlmsConfiguration(event)) {
         return;
       }
 

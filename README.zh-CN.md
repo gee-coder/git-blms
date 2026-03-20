@@ -53,15 +53,15 @@ GitBlms 是一个面向 VS Code 的 Git 追溯注解扩展，目标体验参考 
 
 | 配置项 | 默认值 | 说明 |
 | --- | --- | --- |
-| `easy-git.enabled` | `false` | 全局启用或关闭行内追溯注解 |
-| `easy-git.colorScheme` | `"blue"` | 注解主色调，可选 `blue`、`green`、`purple` |
-| `easy-git.dateFormat` | `"absolute"` | 时间显示格式，可选 `relative` 或 `absolute` |
-| `easy-git.maxLineCount` | `5000` | 大文件保护阈值 |
-| `easy-git.cacheTimeout` | `60000` | blame 缓存时长，单位毫秒 |
-| `easy-git.maxAnnotationWidth` | `22` | 左侧 blame 信息栏最大宽度，单位 `ch` |
-| `easy-git.uncommittedColor` | `"46,160,67"` | 未提交行颜色，支持 CSV、`rgb(...)` 和十六进制 |
-| `easy-git.currentAuthorColor` | `""` | 当前 Git 用户提交代码的高亮色。留空表示关闭，同时保留代码年龄色阶 |
-| `easy-git.language` | `"auto"` | 插件显示语言，可选 `auto`、`zh-CN`、`en` |
+| `git-blms.enabled` | `false` | 全局启用或关闭行内追溯注解 |
+| `git-blms.colorScheme` | `"blue"` | 注解主色调，可选 `blue`、`green`、`purple` |
+| `git-blms.dateFormat` | `"absolute"` | 时间显示格式，可选 `relative` 或 `absolute` |
+| `git-blms.maxLineCount` | `5000` | 大文件保护阈值 |
+| `git-blms.cacheTimeout` | `60000` | blame 缓存时长，单位毫秒 |
+| `git-blms.maxAnnotationWidth` | `22` | 左侧 blame 信息栏最大宽度，单位 `ch` |
+| `git-blms.uncommittedColor` | `"46,160,67"` | 未提交行颜色，支持 CSV、`rgb(...)` 和十六进制 |
+| `git-blms.currentAuthorColor` | `""` | 当前 Git 用户提交代码的高亮色。留空表示关闭，同时保留代码年龄色阶 |
+| `git-blms.language` | `"auto"` | 插件显示语言，可选 `auto`、`zh-CN`、`en` |
 
 ## 体验说明
 

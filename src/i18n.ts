@@ -74,8 +74,8 @@ export function formatTooLargeSkipReason(
   maxLineCount: number
 ): string {
   if (language === "zh-CN") {
-    return `当前文件共有 ${lineCount} 行，已超过 easy-git.maxLineCount (${maxLineCount})。`;
+    return `当前文件共有 ${lineCount} 行，已超过 git-blms.maxLineCount (${maxLineCount})。`;
   }
 
-  return `The current file has ${lineCount} lines, which exceeds easy-git.maxLineCount (${maxLineCount}).`;
+  return `The current file has ${lineCount} lines, which exceeds git-blms.maxLineCount (${maxLineCount}).`;
 }

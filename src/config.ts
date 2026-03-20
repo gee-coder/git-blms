@@ -1,27 +1,27 @@
 import * as vscode from "vscode";
-import type { EasyGitConfig } from "./types";
+import type { GitBlmsConfig } from "./types";
 
-export const EXTENSION_SECTION = "easy-git";
-export const CONTEXT_ENABLED = "easyGit.enabled";
+export const EXTENSION_SECTION = "git-blms";
+export const CONTEXT_ENABLED = "gitBlms.enabled";
 
-export const COMMAND_TOGGLE_BLAME = "easy-git.toggleBlame";
-export const COMMAND_SHOW_BLAME = "easy-git.showBlame";
-export const COMMAND_HIDE_BLAME = "easy-git.hideBlame";
-export const COMMAND_OPEN_COMMIT_DETAILS = "easy-git.openCommitDetails";
+export const COMMAND_TOGGLE_BLAME = "git-blms.toggleBlame";
+export const COMMAND_SHOW_BLAME = "git-blms.showBlame";
+export const COMMAND_HIDE_BLAME = "git-blms.hideBlame";
+export const COMMAND_OPEN_COMMIT_DETAILS = "git-blms.openCommitDetails";
 
-export function getExtensionConfig(): EasyGitConfig {
+export function getExtensionConfig(): GitBlmsConfig {
   const configuration = vscode.workspace.getConfiguration(EXTENSION_SECTION);
 
   return {
     enabled: configuration.get<boolean>("enabled", false),
-    colorScheme: configuration.get<EasyGitConfig["colorScheme"]>("colorScheme", "blue"),
-    dateFormat: configuration.get<EasyGitConfig["dateFormat"]>("dateFormat", "absolute"),
+    colorScheme: configuration.get<GitBlmsConfig["colorScheme"]>("colorScheme", "blue"),
+    dateFormat: configuration.get<GitBlmsConfig["dateFormat"]>("dateFormat", "absolute"),
     maxLineCount: configuration.get<number>("maxLineCount", 5000),
     cacheTimeout: configuration.get<number>("cacheTimeout", 60_000),
     maxAnnotationWidth: configuration.get<number>("maxAnnotationWidth", 22),
     uncommittedColor: configuration.get<string>("uncommittedColor", "46,160,67"),
     currentAuthorColor: configuration.get<string>("currentAuthorColor", ""),
-    language: configuration.get<EasyGitConfig["language"]>("language", "auto")
+    language: configuration.get<GitBlmsConfig["language"]>("language", "auto")
   };
 }
 
@@ -31,7 +31,7 @@ export async function setEnabled(enabled: boolean): Promise<void> {
     .update("enabled", enabled, vscode.ConfigurationTarget.Global);
 }
 
-export function affectsEasyGitConfiguration(event: vscode.ConfigurationChangeEvent): boolean {
+export function affectsGitBlmsConfiguration(event: vscode.ConfigurationChangeEvent): boolean {
   return event.affectsConfiguration(EXTENSION_SECTION);
 }
 
