@@ -59,8 +59,9 @@ Default keybinding:
 | `git-blms.maxLineCount` | `5000` | Skip blame rendering for very large files |
 | `git-blms.cacheTimeout` | `60000` | Blame cache lifetime in milliseconds |
 | `git-blms.maxAnnotationWidth` | `22` | Maximum width of the blame column in `ch` |
-| `git-blms.uncommittedColor` | `"46,160,67"` | Color for uncommitted lines. Supports CSV, `rgb(...)`, and hex |
-| `git-blms.currentAuthorColor` | `""` | Optional highlight color for lines authored by the current Git user. Keeps age buckets and leaves the feature disabled when empty |
+| `git-blms.uncommittedColor` | `"#2ea043"` | Color for uncommitted lines. Use hex to get a picker or inline preview in Settings |
+| `git-blms.highlightCurrentAuthor` | `false` | Highlights lines authored by the current Git user with a separate accent color |
+| `git-blms.currentAuthorColor` | `"#d97706"` | Accent color for current-user committed lines. Use hex to get a picker or inline preview in Settings |
 | `git-blms.language` | `"auto"` | UI language: `auto`, `zh-CN`, `en` |
 
 ## Notes

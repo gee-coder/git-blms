@@ -11,7 +11,8 @@
   "config.maxLineCount.description": "Skip blame rendering for files over this line count.",
   "config.cacheTimeout.description": "Blame cache lifetime in milliseconds.",
   "config.maxAnnotationWidth.description": "Maximum width of the left blame column in ch units.",
-  "config.uncommittedColor.description": "Color used for uncommitted lines. Supports 46,160,67, rgb(46,160,67), or #2ea043.",
-  "config.currentAuthorColor.description": "Optional highlight color for lines authored by the current Git user. Leave empty to disable. Supports 46,160,67, rgb(46,160,67), or #2ea043.",
+  "config.uncommittedColor.description": "Color used for uncommitted lines. Use a hex value such as #2ea043 to get a picker or inline preview in Settings.",
+  "config.highlightCurrentAuthor.description": "Highlight lines authored by the current Git user with a separate accent color.",
+  "config.currentAuthorColor.description": "Accent color for the current Git user's committed lines. Use a hex value such as #d97706 to get a picker or inline preview in Settings.",
   "config.language.description": "Extension display language: auto, zh-CN, or en."
 }

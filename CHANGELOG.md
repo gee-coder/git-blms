@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 本项目的重要变更会记录在这里。
 
+## [1.0.1] - 2026-03-20
+
+### Changed
+
+- Improved structural edit handling for inline blame so Enter is stable and delete-path flashing is reduced
+- Split committed and uncommitted decorations to lower full-editor repainting during line merges
+- Added hex-based color settings with picker-friendly configuration metadata
+- Added a dedicated current-author highlight toggle and refreshed related setting descriptions
+
 ## [1.0.0] - 2026-03-20
 
 ### Added

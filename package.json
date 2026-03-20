@@ -2,7 +2,7 @@
   "name": "git-blms",
   "displayName": "GitBlms",
   "description": "%extension.description%",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "gee-coder",
   "license": "MIT",
   "repository": {
@@ -151,12 +151,19 @@
         },
         "git-blms.uncommittedColor": {
           "type": "string",
-          "default": "46,160,67",
+          "default": "#2ea043",
+          "format": "color-hex",
           "description": "%config.uncommittedColor.description%"
+        },
+        "git-blms.highlightCurrentAuthor": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.highlightCurrentAuthor.description%"
         },
         "git-blms.currentAuthorColor": {
           "type": "string",
-          "default": "",
+          "default": "#d97706",
+          "format": "color-hex",
           "description": "%config.currentAuthorColor.description%"
         },
         "git-blms.language": {

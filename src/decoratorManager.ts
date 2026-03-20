@@ -15,6 +15,7 @@ import {
 } from "./colorCalculator";
 import { resolveDisplayLanguage, t } from "./i18n";
 import { formatCompactTimestamp, formatFullDateTime } from "./relativeTime";
+import { buildTransientBlameLines, hasStructuralLineChange, hasStructuralLineDeletion } from "./transientLineState";
 import type { BlameLineInfo, GitAuthorIdentity, GitBlmsConfig } from "./types";
 
 const REFRESH_DELAY_MS = 250;
@@ -22,13 +23,19 @@ const COLUMN_HORIZONTAL_PADDING_CH = 0.45;
 const COLUMN_MARGIN_RIGHT_CH = 0.25;
 
 export class DecoratorManager implements vscode.Disposable {
-  private readonly annotationDecorationType = vscode.window.createTextEditorDecorationType({
-    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
+  private readonly committedDecorationType = vscode.window.createTextEditorDecorationType({
+    rangeBehavior: vscode.DecorationRangeBehavior.OpenClosed
+  });
+  private readonly uncommittedDecorationType = vscode.window.createTextEditorDecorationType({
+    rangeBehavior: vscode.DecorationRangeBehavior.OpenClosed
   });
   private readonly pendingRefreshes = new Map<string, NodeJS.Timeout>();
   private readonly refreshGeneration = new Map<string, number>();
   private readonly skipMessages = new Map<string, string>();
+  private readonly renderedBlameLines = new Map<string, BlameLineInfo[]>();
   private readonly renderedLineInfo = new Map<string, Map<number, BlameLineInfo>>();
+  private readonly lastAnnotationWidths = new Map<string, number>();
+  private readonly currentAuthors = new Map<string, GitAuthorIdentity | undefined>();
 
   constructor(private readonly blameManager: BlameManager) {}
 
@@ -48,6 +55,7 @@ export class DecoratorManager implements vscode.Disposable {
 
     if (!config.enabled) {
       this.clearEditor(editor);
+      this.clearDocumentState(documentKey);
       return;
     }
 
@@ -58,44 +66,49 @@ export class DecoratorManager implements vscode.Disposable {
 
     if (lookup.kind === "skip") {
       this.clearEditor(editor);
-      this.renderedLineInfo.delete(documentKey);
+      this.clearDocumentState(documentKey);
       this.maybeShowSkipReason(editor, lookup.reason, lookup.code);
       return;
     }
 
     this.skipMessages.delete(documentKey);
-    this.renderedLineInfo.set(
+    this.renderedBlameLines.set(
       documentKey,
-      new Map(
-        lookup.blame.lines
-          .filter((line) => !line.isUncommitted)
-          .map((line) => [line.lineNumber, line])
-      )
+      lookup.blame.lines.map((line) => ({ ...line }))
     );
+    this.renderedLineInfo.set(documentKey, createRenderedLineInfo(lookup.blame.lines));
     const locale = vscode.env.language || Intl.DateTimeFormat().resolvedOptions().locale;
     const language = resolveDisplayLanguage(config.language, locale);
     const annotationWidth = calculateAnnotationWidth(lookup.blame.lines, config, locale, language);
+    this.lastAnnotationWidths.set(documentKey, annotationWidth);
+    this.currentAuthors.set(documentKey, lookup.blame.currentAuthor);
 
-    const annotationOptions = lookup.blame.lines
-      .map((line) =>
-        this.createDecorationOption(
-          editor.document,
-          line,
-          config,
-          locale,
-          language,
-          annotationWidth,
-          lookup.blame.currentAuthor
-        )
-      )
-      .filter((value): value is vscode.DecorationOptions => value !== undefined);
+    const annotationOptions = this.buildDecorationOptions(
+      editor.document,
+      lookup.blame.lines,
+      config,
+      locale,
+      language,
+      formatAnnotationWidth(annotationWidth),
+      lookup.blame.currentAuthor
+    );
 
-    editor.setDecorations(this.annotationDecorationType, annotationOptions);
+    this.setEditorDecorations(editor, annotationOptions);
   }
 
-  scheduleRefresh(document: vscode.TextDocument): void {
+  scheduleRefresh(
+    document: vscode.TextDocument,
+    contentChanges: readonly vscode.TextDocumentContentChangeEvent[] = []
+  ): void {
     const documentKey = document.uri.toString();
     this.blameManager.invalidateDocument(document);
+    const hasLineDeletion = hasStructuralLineDeletion(contentChanges);
+
+    if (!hasLineDeletion && hasStructuralLineChange(contentChanges)) {
+      this.applyTransientDecorations(document, contentChanges);
+    } else if (hasLineDeletion) {
+      this.applyTransientUncommittedDecorations(document, contentChanges);
+    }
 
     const pending = this.pendingRefreshes.get(documentKey);
     if (pending) {
@@ -124,7 +137,7 @@ export class DecoratorManager implements vscode.Disposable {
     }
     this.skipMessages.delete(key);
     this.refreshGeneration.delete(key);
-    this.renderedLineInfo.delete(key);
+    this.clearDocumentState(key);
   }
 
   handleConfigurationChanged(): void {
@@ -136,7 +149,10 @@ export class DecoratorManager implements vscode.Disposable {
     for (const editor of vscode.window.visibleTextEditors) {
       this.clearEditor(editor);
     }
+    this.renderedBlameLines.clear();
     this.renderedLineInfo.clear();
+    this.lastAnnotationWidths.clear();
+    this.currentAuthors.clear();
   }
 
   dispose(): void {
@@ -147,11 +163,24 @@ export class DecoratorManager implements vscode.Disposable {
       clearTimeout(timeout);
     }
     this.pendingRefreshes.clear();
-    this.annotationDecorationType.dispose();
+    this.committedDecorationType.dispose();
+    this.uncommittedDecorationType.dispose();
   }
 
   getLineInfo(uri: vscode.Uri, lineNumber: number): BlameLineInfo | undefined {
     return this.renderedLineInfo.get(uri.toString())?.get(lineNumber);
+  }
+
+  prepareForDelete(editor: vscode.TextEditor | undefined, direction: "left" | "right"): void {
+    if (!editor || editor.document.uri.scheme !== "file" || !getExtensionConfig().enabled) {
+      return;
+    }
+
+    if (!this.shouldPreclearForDelete(editor, direction)) {
+      return;
+    }
+
+    this.maskUncommittedEditorsForDelete(editor.document);
   }
 
   private async refreshVisibleEditorsForDocument(uri: vscode.Uri): Promise<void> {
@@ -163,7 +192,210 @@ export class DecoratorManager implements vscode.Disposable {
   }
 
   private clearEditor(editor: vscode.TextEditor): void {
-    editor.setDecorations(this.annotationDecorationType, []);
+    editor.setDecorations(this.committedDecorationType, []);
+    editor.setDecorations(this.uncommittedDecorationType, []);
+  }
+
+  private buildDecorationOptions(
+    document: vscode.TextDocument,
+    lines: readonly BlameLineInfo[],
+    config: GitBlmsConfig,
+    locale: string,
+    language: ReturnType<typeof resolveDisplayLanguage>,
+    annotationWidth: string,
+    currentAuthor?: GitAuthorIdentity
+  ): { committed: vscode.DecorationOptions[]; uncommitted: vscode.DecorationOptions[] } {
+    const committed: vscode.DecorationOptions[] = [];
+    const uncommitted: vscode.DecorationOptions[] = [];
+
+    for (const line of lines) {
+      const option = this.createDecorationOption(
+        document,
+        line,
+        config,
+        locale,
+        language,
+        annotationWidth,
+        currentAuthor
+      );
+
+      if (!option) {
+        continue;
+      }
+
+      if (line.isUncommitted) {
+        uncommitted.push(option);
+      } else {
+        committed.push(option);
+      }
+    }
+
+    return { committed, uncommitted };
+  }
+
+  private applyTransientDecorations(
+    document: vscode.TextDocument,
+    contentChanges: readonly vscode.TextDocumentContentChangeEvent[]
+  ): void {
+    if (!getExtensionConfig().enabled) {
+      return;
+    }
+
+    const documentKey = document.uri.toString();
+    const existingLines = this.renderedBlameLines.get(documentKey);
+    if (!existingLines) {
+      return;
+    }
+
+    const visibleEditors = vscode.window.visibleTextEditors.filter(
+      (editor) => editor.document.uri.toString() === documentKey
+    );
+    if (visibleEditors.length === 0) {
+      return;
+    }
+
+    const config = getExtensionConfig();
+    const locale = vscode.env.language || Intl.DateTimeFormat().resolvedOptions().locale;
+    const language = resolveDisplayLanguage(config.language, locale);
+    const transientLines = buildTransientBlameLines(existingLines, contentChanges);
+    const annotationWidth = Math.max(
+      this.lastAnnotationWidths.get(documentKey) ?? 0,
+      calculateAnnotationWidth(transientLines, config, locale, language)
+    );
+    const currentAuthor = this.currentAuthors.get(documentKey);
+    const annotationOptions = this.buildDecorationOptions(
+      document,
+      transientLines,
+      config,
+      locale,
+      language,
+      formatAnnotationWidth(annotationWidth),
+      currentAuthor
+    );
+
+    this.renderedBlameLines.set(
+      documentKey,
+      transientLines.map((line) => ({ ...line }))
+    );
+    this.renderedLineInfo.set(documentKey, createRenderedLineInfo(transientLines));
+    this.lastAnnotationWidths.set(documentKey, annotationWidth);
+
+    for (const editor of visibleEditors) {
+      this.setEditorDecorations(editor, annotationOptions);
+    }
+  }
+
+  private applyTransientUncommittedDecorations(
+    document: vscode.TextDocument,
+    contentChanges: readonly vscode.TextDocumentContentChangeEvent[]
+  ): void {
+    if (!getExtensionConfig().enabled) {
+      return;
+    }
+
+    const documentKey = document.uri.toString();
+    const existingLines = this.renderedBlameLines.get(documentKey);
+    if (!existingLines) {
+      return;
+    }
+
+    const visibleEditors = vscode.window.visibleTextEditors.filter(
+      (editor) => editor.document.uri.toString() === documentKey
+    );
+    if (visibleEditors.length === 0) {
+      return;
+    }
+
+    const config = getExtensionConfig();
+    const locale = vscode.env.language || Intl.DateTimeFormat().resolvedOptions().locale;
+    const language = resolveDisplayLanguage(config.language, locale);
+    const transientLines = buildTransientBlameLines(existingLines, contentChanges);
+    const annotationWidth = Math.max(
+      this.lastAnnotationWidths.get(documentKey) ?? 0,
+      calculateAnnotationWidth(transientLines, config, locale, language)
+    );
+    const currentAuthor = this.currentAuthors.get(documentKey);
+    const annotationOptions = this.buildDecorationOptions(
+      document,
+      transientLines,
+      config,
+      locale,
+      language,
+      formatAnnotationWidth(annotationWidth),
+      currentAuthor
+    );
+
+    this.renderedBlameLines.set(
+      documentKey,
+      transientLines.map((line) => ({ ...line }))
+    );
+    this.renderedLineInfo.set(documentKey, createRenderedLineInfo(transientLines));
+    this.lastAnnotationWidths.set(documentKey, annotationWidth);
+
+    for (const editor of visibleEditors) {
+      editor.setDecorations(this.uncommittedDecorationType, annotationOptions.uncommitted);
+    }
+  }
+
+  private clearDocumentState(documentKey: string): void {
+    this.skipMessages.delete(documentKey);
+    this.renderedBlameLines.delete(documentKey);
+    this.renderedLineInfo.delete(documentKey);
+    this.lastAnnotationWidths.delete(documentKey);
+    this.currentAuthors.delete(documentKey);
+  }
+
+  private shouldPreclearForDelete(editor: vscode.TextEditor, direction: "left" | "right"): boolean {
+    return editor.selections.some((selection) => {
+      if (!selection.isEmpty) {
+        return selection.start.line !== selection.end.line;
+      }
+
+      const position = selection.active;
+      if (direction === "left") {
+        return position.line > 0 && position.character === 0;
+      }
+
+      if (position.line >= editor.document.lineCount - 1) {
+        return false;
+      }
+
+      const textLine = editor.document.lineAt(position.line);
+      return position.character === textLine.text.length;
+    });
+  }
+
+  private setEditorDecorations(
+    editor: vscode.TextEditor,
+    options: { committed: vscode.DecorationOptions[]; uncommitted: vscode.DecorationOptions[] }
+  ): void {
+    editor.setDecorations(this.committedDecorationType, options.committed);
+    editor.setDecorations(this.uncommittedDecorationType, options.uncommitted);
+  }
+
+  private maskUncommittedEditorsForDelete(document: vscode.TextDocument): void {
+    const documentKey = document.uri.toString();
+    const lines = this.renderedBlameLines.get(documentKey);
+    if (!lines?.some((line) => line.isUncommitted)) {
+      return;
+    }
+
+    const config = getExtensionConfig();
+    const locale = vscode.env.language || Intl.DateTimeFormat().resolvedOptions().locale;
+    const language = resolveDisplayLanguage(config.language, locale);
+    const annotationWidth = formatAnnotationWidth(
+      this.lastAnnotationWidths.get(documentKey) ?? calculateAnnotationWidth(lines, config, locale, language)
+    );
+    const maskedOptions = lines
+      .filter((line) => line.isUncommitted)
+      .map((line) => this.createMaskedUncommittedDecorationOption(document, line, config, locale, language, annotationWidth))
+      .filter((value): value is vscode.DecorationOptions => value !== undefined);
+
+    for (const editor of vscode.window.visibleTextEditors) {
+      if (editor.document.uri.toString() === documentKey) {
+        editor.setDecorations(this.uncommittedDecorationType, maskedOptions);
+      }
+    }
   }
 
   private createDecorationOption(
@@ -202,7 +434,7 @@ export class DecoratorManager implements vscode.Disposable {
     }
 
     const isCurrentAuthor = Boolean(
-      config.currentAuthorColor.trim() && isCurrentAuthorLine(line, currentAuthor)
+      config.highlightCurrentAuthor && config.currentAuthorColor.trim() && isCurrentAuthorLine(line, currentAuthor)
     );
     const annotationColor = isCurrentAuthor
       ? calculateCurrentAuthorAnnotationColor(timestampMs, config.currentAuthorColor)
@@ -225,6 +457,34 @@ export class DecoratorManager implements vscode.Disposable {
           margin: `0 ${COLUMN_MARGIN_RIGHT_CH}ch 0 0`,
           width: annotationWidth,
           textDecoration: `none; padding: 0.08em ${COLUMN_HORIZONTAL_PADDING_CH}ch 0.08em ${COLUMN_HORIZONTAL_PADDING_CH}ch; border-left: 3px solid ${annotationBorder};`
+        }
+      }
+    };
+  }
+
+  private createMaskedUncommittedDecorationOption(
+    document: vscode.TextDocument,
+    line: BlameLineInfo,
+    config: GitBlmsConfig,
+    locale: string,
+    language: ReturnType<typeof resolveDisplayLanguage>,
+    annotationWidth: string
+  ): vscode.DecorationOptions | undefined {
+    if (!line.isUncommitted || line.lineNumber >= document.lineCount) {
+      return undefined;
+    }
+
+    const textLine = document.lineAt(line.lineNumber);
+    return {
+      range: getAnnotationRange(textLine),
+      renderOptions: {
+        before: {
+          contentText: buildUncommittedAnnotationText(config, locale, language),
+          color: "rgba(0, 0, 0, 0)",
+          backgroundColor: "rgba(0, 0, 0, 0)",
+          margin: `0 ${COLUMN_MARGIN_RIGHT_CH}ch 0 0`,
+          width: annotationWidth,
+          textDecoration: `none; padding: 0.08em ${COLUMN_HORIZONTAL_PADDING_CH}ch 0.08em ${COLUMN_HORIZONTAL_PADDING_CH}ch; border-left: 3px solid transparent;`
         }
       }
     };
@@ -324,7 +584,7 @@ function calculateAnnotationWidth(
   config: GitBlmsConfig,
   locale: string,
   language: ReturnType<typeof resolveDisplayLanguage>
-): string {
+): number {
   let maxTextWidth = 0;
 
   for (const line of lines) {
@@ -334,8 +594,19 @@ function calculateAnnotationWidth(
     maxTextWidth = Math.max(maxTextWidth, getVisualWidth(text));
   }
 
-  const finalWidth = clamp(maxTextWidth, 0, config.maxAnnotationWidth);
-  return `${finalWidth.toFixed(1)}ch`;
+  return clamp(maxTextWidth, 0, config.maxAnnotationWidth);
+}
+
+function formatAnnotationWidth(value: number): string {
+  return `${value.toFixed(1)}ch`;
+}
+
+function createRenderedLineInfo(lines: readonly BlameLineInfo[]): Map<number, BlameLineInfo> {
+  return new Map(
+    lines
+      .filter((line) => !line.isUncommitted)
+      .map((line) => [line.lineNumber, line])
+  );
 }
 
 function getVisualWidth(value: string): number {

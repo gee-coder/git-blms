@@ -10,6 +10,7 @@ export interface GitBlmsConfig {
   cacheTimeout: number;
   maxAnnotationWidth: number;
   uncommittedColor: string;
+  highlightCurrentAuthor: boolean;
   currentAuthorColor: string;
   language: DisplayLanguage;
 }

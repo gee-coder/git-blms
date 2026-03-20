@@ -11,7 +11,8 @@
   "config.maxLineCount.description": "超过该行数的文件会跳过 blame 渲染以保护性能。",
   "config.cacheTimeout.description": "blame 结果缓存时长，单位毫秒。",
   "config.maxAnnotationWidth.description": "左侧 blame 信息栏最大宽度，单位 ch。",
-  "config.uncommittedColor.description": "未提交代码颜色，支持 46,160,67、rgb(46,160,67) 或 #2ea043。",
-  "config.currentAuthorColor.description": "当前 Git 用户提交代码的高亮色。留空表示关闭。支持 46,160,67、rgb(46,160,67) 或 #2ea043。",
+  "config.uncommittedColor.description": "未提交代码的颜色。建议使用 #2ea043 这类十六进制写法，这样在设置页里可以直接选色或看到颜色预览。",
+  "config.highlightCurrentAuthor.description": "是否用单独的强调色高亮当前 Git 用户提交的代码。",
+  "config.currentAuthorColor.description": "当前 Git 用户已提交代码的强调色。建议使用 #d97706 这类十六进制写法，这样在设置页里可以直接选色或看到颜色预览。",
   "config.language.description": "扩展显示语言，可选 auto、zh-CN、en。"
 }

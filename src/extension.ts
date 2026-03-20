@@ -72,6 +72,10 @@ export function activate(context: vscode.ExtensionContext): void {
       );
     }
   });
+
+  void registerDeleteCommandProxy(context, decoratorManager, "deleteLeft", "default:deleteLeft", "left");
+  void registerDeleteCommandProxy(context, decoratorManager, "deleteRight", "default:deleteRight", "right");
+
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
       void decoratorManager.refreshEditor(editor);
@@ -80,7 +84,7 @@ export function activate(context: vscode.ExtensionContext): void {
       void decoratorManager.refreshVisibleEditors();
     }),
     vscode.workspace.onDidChangeTextDocument((event) => {
-      decoratorManager.scheduleRefresh(event.document);
+      decoratorManager.scheduleRefresh(event.document, event.contentChanges);
     }),
     vscode.workspace.onDidSaveTextDocument((document) => {
       decoratorManager.handleDocumentSaved(document);
@@ -168,4 +172,24 @@ function getResolvedLanguage(): ReturnType<typeof resolveDisplayLanguage> {
   const config = getExtensionConfig();
   const locale = vscode.env.language || Intl.DateTimeFormat().resolvedOptions().locale;
   return resolveDisplayLanguage(config.language, locale);
+}
+
+async function registerDeleteCommandProxy(
+  context: vscode.ExtensionContext,
+  decoratorManager: DecoratorManager,
+  commandId: "deleteLeft" | "deleteRight",
+  defaultCommandId: "default:deleteLeft" | "default:deleteRight",
+  direction: "left" | "right"
+): Promise<void> {
+  const commands = await vscode.commands.getCommands(true);
+  if (!commands.includes(defaultCommandId)) {
+    return;
+  }
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(commandId, async (...args: unknown[]) => {
+      decoratorManager.prepareForDelete(vscode.window.activeTextEditor, direction);
+      await vscode.commands.executeCommand(defaultCommandId, ...args);
+    })
+  );
 }
