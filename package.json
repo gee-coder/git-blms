@@ -1,7 +1,7 @@
 {
   "name": "easy-git",
-  "displayName": "Easy Git Blame",
-  "description": "Easy Git Blame brings GoLand-style inline Git blame to VS Code, with age buckets, uncommitted highlighting, and bilingual UI / Easy Git Blame 为 VS Code 带来 GoLand 风格的 Git 追溯注解体验，支持时间色阶、未提交高亮和中英文界面。",
+  "displayName": "GitBlms",
+  "description": "GitBlms brings GoLand-style inline Git blame to VS Code, with age buckets, uncommitted highlighting, and bilingual UI / GitBlms 为 VS Code 带来 GoLand 风格的 Git 追溯注解体验，支持时间色阶、未提交高亮和中英文界面。",
   "version": "1.0.0",
   "publisher": "gee-coder",
   "license": "MIT",
@@ -105,7 +105,7 @@
       ]
     },
     "configuration": {
-      "title": "Easy Git Blame",
+      "title": "GitBlms",
       "properties": {
         "easy-git.enabled": {
           "type": "boolean",

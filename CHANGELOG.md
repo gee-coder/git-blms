@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- GoLand-style inline Git blame column for VS Code
+- GitBlms 1.0.0: GoLand-style inline Git blame column for VS Code
 - Age-bucketed annotation colors with stronger visual contrast
 - Hover commit details with author, timestamp, hash, and summary
 - Unsaved file support via `git blame --contents -`
@@ -17,7 +17,7 @@ All notable changes to this project will be documented in this file.
 
 ### 新增
 
-- 面向 VS Code 的 GoLand 风格行内 Git blame 信息栏
+- GitBlms 1.0.0：面向 VS Code 的 GoLand 风格行内 Git blame 信息栏
 - 更有视觉对比度的按代码年龄分层色阶
 - 作者、时间、哈希和摘要的悬浮提交详情
 - 基于 `git blame --contents -` 的未保存文件支持

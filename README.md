@@ -1,8 +1,8 @@
-# Easy Git Blame
+# GitBlms
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-Easy Git Blame is a VS Code extension that brings a GoLand-style inline Git blame experience into the editor.
+GitBlms is a VS Code extension that brings a GoLand-style inline Git blame experience into the editor.
 
 ## Home
 
@@ -17,6 +17,10 @@ Easy Git Blame is a VS Code extension that brings a GoLand-style inline Git blam
 - `git blame --contents -` support for unsaved editor content
 - Dedicated configurable style for uncommitted lines
 - Built-in Chinese and English runtime text, plus a custom extension icon
+
+## Preview
+
+![GitBlms preview](./images/preview.png)
 
 ## Features
 

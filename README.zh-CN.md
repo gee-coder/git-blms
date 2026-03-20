@@ -1,8 +1,8 @@
-# Easy Git Blame
+# GitBlms
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-Easy Git Blame 是一个面向 VS Code 的 Git 追溯注解扩展，目标体验参考 GoLand 的 annotate / blame 视图。
+GitBlms 是一个面向 VS Code 的 Git 追溯注解扩展，目标体验参考 GoLand 的 annotate / blame 视图。
 
 ## 主页
 
@@ -17,6 +17,10 @@ Easy Git Blame 是一个面向 VS Code 的 Git 追溯注解扩展，目标体验
 - 支持未保存文件，优先基于当前编辑器内容执行 `git blame --contents -`
 - 未提交代码有单独的可配置样式
 - 内置中英文运行时文案，并提供自定义插件图标
+
+## 效果预览
+
+![GitBlms 效果图](./images/preview.png)
 
 ## 功能概览
 
