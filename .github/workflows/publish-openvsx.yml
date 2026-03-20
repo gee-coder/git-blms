@@ -1,0 +1,44 @@
+name: Publish Open VSX
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish-openvsx:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Publish to Open VSX
+        shell: pwsh
+        env:
+          OPENVSX_TOKEN: ${{ secrets.OPENVSX_TOKEN }}
+        run: |
+          if (-not $env:OPENVSX_TOKEN) {
+            throw "Repository secret OPENVSX_TOKEN is not configured."
+          }
+
+          ./scripts/publish-openvsx.ps1

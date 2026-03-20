@@ -78,3 +78,30 @@ npm test
 ```
 
 Press `F5` to launch the extension development host.
+
+## Open VSX Publishing
+
+The repo includes a PowerShell helper script for Open VSX publishing:
+
+```bash
+npm run package:vsix
+npm run publish:openvsx
+```
+
+If you need to create the publisher namespace first:
+
+```bash
+npm run publish:openvsx:namespace
+```
+
+The script reads the token from `OPENVSX_TOKEN` or `OVSX_PAT`, and it also supports passing `-Token` manually to `./scripts/publish-openvsx.ps1`.
+
+## GitHub Actions
+
+The repository includes an automated Open VSX workflow at `.github/workflows/publish-openvsx.yml`.
+
+- Trigger: pushing a tag like `v1.0.1`
+- Manual trigger: GitHub Actions `workflow_dispatch`
+- Required secret: `OPENVSX_TOKEN`
+
+Once `OPENVSX_TOKEN` is configured in the repository secrets, pushing a new version tag will automatically lint, test, package, and publish the extension to Open VSX.

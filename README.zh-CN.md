@@ -78,3 +78,30 @@ npm test
 ```
 
 按 `F5` 启动扩展开发宿主。
+
+## Open VSX 发布
+
+仓库里已经带了一个用于发布 Open VSX 的 PowerShell 脚本：
+
+```bash
+npm run package:vsix
+npm run publish:openvsx
+```
+
+如果还需要先创建 publisher namespace，可以执行：
+
+```bash
+npm run publish:openvsx:namespace
+```
+
+脚本会优先从 `OPENVSX_TOKEN` 或 `OVSX_PAT` 读取 token，也支持手动给 `./scripts/publish-openvsx.ps1` 传 `-Token`。
+
+## GitHub Actions
+
+仓库里已经带了自动发布 Open VSX 的工作流：`.github/workflows/publish-openvsx.yml`。
+
+- 触发方式：推送形如 `v1.0.1` 的 tag
+- 手动触发：GitHub Actions 的 `workflow_dispatch`
+- 必要 secret：`OPENVSX_TOKEN`
+
+只要在仓库的 GitHub Secrets 里配置好 `OPENVSX_TOKEN`，以后推送新版本 tag 就会自动执行 lint、test、打包并发布到 Open VSX。
