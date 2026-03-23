@@ -2,3 +2,6 @@ node_modules
 out
 .DS_Store
 *.vsix
+.vscode
+.cursor
+.claude

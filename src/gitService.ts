@@ -16,6 +16,7 @@ interface GetBlameOptions {
 export class GitService {
   private readonly repoRootCache = new Map<string, Promise<string | undefined>>();
   private readonly currentAuthorCache = new Map<string, Promise<GitAuthorIdentity | undefined>>();
+  private readonly headHashCache = new Map<string, { hash: string; expiresAt: number }>();
 
   async resolveRepoRoot(filePath: string): Promise<string | undefined> {
     const directory = path.dirname(filePath);
@@ -83,6 +84,35 @@ export class GitService {
   clearCaches(): void {
     this.repoRootCache.clear();
     this.currentAuthorCache.clear();
+    this.headHashCache.clear();
+  }
+
+  /**
+   * Get the current HEAD commit hash for a repository.
+   * Results are cached for 1 second to optimize performance.
+   */
+  async getHeadHash(repoRoot: string): Promise<string | undefined> {
+    const now = Date.now();
+    const cached = this.headHashCache.get(repoRoot);
+
+    if (cached && cached.expiresAt > now) {
+      return cached.hash;
+    }
+
+    try {
+      const { stdout } = await this.runGitCommand(["rev-parse", "HEAD"], repoRoot);
+      const hash = stdout.trim();
+
+      if (hash) {
+        // Cache for 1 second
+        this.headHashCache.set(repoRoot, { hash, expiresAt: now + 1000 });
+        return hash;
+      }
+
+      return undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   private async getCurrentAuthorForRepo(repoRoot: string): Promise<GitAuthorIdentity | undefined> {
