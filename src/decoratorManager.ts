@@ -14,13 +14,18 @@ import {
   calculateUncommittedAnnotationColor
 } from "./colorCalculator";
 import { resolveDisplayLanguage, t } from "./i18n";
-import { formatCompactTimestamp, formatFullDateTime } from "./relativeTime";
+import { formatCompactTimestamp, formatFullDateTime, getVisualWidth, isWideCharacter } from "./relativeTime";
 import { buildTransientBlameLines, hasStructuralLineChange, hasStructuralLineDeletion } from "./transientLineState";
 import type { BlameLineInfo, GitAuthorIdentity, GitBlmsConfig } from "./types";
 
 const REFRESH_DELAY_MS = 250;
 const COLUMN_HORIZONTAL_PADDING_CH = 0.45;
 const COLUMN_MARGIN_RIGHT_CH = 0.25;
+
+// Annotation width constants
+const TIME_DISPLAY_WIDTH = 10;  // Fixed width for time display
+const SEPARATOR_WIDTH = 2;       // Width of separator between time and username
+const DEFAULT_MAX_ANNOTATION_WIDTH = 22;  // Default max annotation width from config
 
 export class DecoratorManager implements vscode.Disposable {
   private readonly committedDecorationType = vscode.window.createTextEditorDecorationType({
@@ -35,6 +40,7 @@ export class DecoratorManager implements vscode.Disposable {
   private readonly renderedBlameLines = new Map<string, BlameLineInfo[]>();
   private readonly renderedLineInfo = new Map<string, Map<number, BlameLineInfo>>();
   private readonly lastAnnotationWidths = new Map<string, number>();
+  private readonly lastUsernameWidths = new Map<string, number>();
   private readonly currentAuthors = new Map<string, GitAuthorIdentity | undefined>();
 
   constructor(private readonly blameManager: BlameManager) {}
@@ -79,8 +85,13 @@ export class DecoratorManager implements vscode.Disposable {
     this.renderedLineInfo.set(documentKey, createRenderedLineInfo(lookup.blame.lines));
     const locale = vscode.env.language || Intl.DateTimeFormat().resolvedOptions().locale;
     const language = resolveDisplayLanguage(config.language, locale);
-    const annotationWidth = calculateAnnotationWidth(lookup.blame.lines, config, locale, language);
+
+    // Calculate username display width based on config and actual usernames
+    const usernameDisplayWidth = calculateUsernameDisplayWidth(lookup.blame.lines, config.maxAnnotationWidth);
+    const annotationWidth = calculateAnnotationWidth(lookup.blame.lines, config, locale, language, usernameDisplayWidth);
+
     this.lastAnnotationWidths.set(documentKey, annotationWidth);
+    this.lastUsernameWidths.set(documentKey, usernameDisplayWidth);
     this.currentAuthors.set(documentKey, lookup.blame.currentAuthor);
 
     const annotationOptions = this.buildDecorationOptions(
@@ -90,6 +101,7 @@ export class DecoratorManager implements vscode.Disposable {
       locale,
       language,
       formatAnnotationWidth(annotationWidth),
+      usernameDisplayWidth,
       lookup.blame.currentAuthor
     );
 
@@ -152,6 +164,7 @@ export class DecoratorManager implements vscode.Disposable {
     this.renderedBlameLines.clear();
     this.renderedLineInfo.clear();
     this.lastAnnotationWidths.clear();
+    this.lastUsernameWidths.clear();
     this.currentAuthors.clear();
   }
 
@@ -203,6 +216,7 @@ export class DecoratorManager implements vscode.Disposable {
     locale: string,
     language: ReturnType<typeof resolveDisplayLanguage>,
     annotationWidth: string,
+    usernameDisplayWidth: number,
     currentAuthor?: GitAuthorIdentity
   ): { committed: vscode.DecorationOptions[]; uncommitted: vscode.DecorationOptions[] } {
     const committed: vscode.DecorationOptions[] = [];
@@ -216,6 +230,7 @@ export class DecoratorManager implements vscode.Disposable {
         locale,
         language,
         annotationWidth,
+        usernameDisplayWidth,
         currentAuthor
       );
 
@@ -258,10 +273,15 @@ export class DecoratorManager implements vscode.Disposable {
     const locale = vscode.env.language || Intl.DateTimeFormat().resolvedOptions().locale;
     const language = resolveDisplayLanguage(config.language, locale);
     const transientLines = buildTransientBlameLines(existingLines, contentChanges);
+
+    // Use stored username width to keep layout stable during editing
+    const usernameDisplayWidth = this.lastUsernameWidths.get(documentKey) ??
+      calculateUsernameDisplayWidth(existingLines, config.maxAnnotationWidth);
     const annotationWidth = Math.max(
       this.lastAnnotationWidths.get(documentKey) ?? 0,
-      calculateAnnotationWidth(transientLines, config, locale, language)
+      calculateAnnotationWidth(transientLines, config, locale, language, usernameDisplayWidth)
     );
+
     const currentAuthor = this.currentAuthors.get(documentKey);
     const annotationOptions = this.buildDecorationOptions(
       document,
@@ -270,6 +290,7 @@ export class DecoratorManager implements vscode.Disposable {
       locale,
       language,
       formatAnnotationWidth(annotationWidth),
+      usernameDisplayWidth,
       currentAuthor
     );
 
@@ -310,10 +331,15 @@ export class DecoratorManager implements vscode.Disposable {
     const locale = vscode.env.language || Intl.DateTimeFormat().resolvedOptions().locale;
     const language = resolveDisplayLanguage(config.language, locale);
     const transientLines = buildTransientBlameLines(existingLines, contentChanges);
+
+    // Use stored username width to keep layout stable during editing
+    const usernameDisplayWidth = this.lastUsernameWidths.get(documentKey) ??
+      calculateUsernameDisplayWidth(existingLines, config.maxAnnotationWidth);
     const annotationWidth = Math.max(
       this.lastAnnotationWidths.get(documentKey) ?? 0,
-      calculateAnnotationWidth(transientLines, config, locale, language)
+      calculateAnnotationWidth(transientLines, config, locale, language, usernameDisplayWidth)
     );
+
     const currentAuthor = this.currentAuthors.get(documentKey);
     const annotationOptions = this.buildDecorationOptions(
       document,
@@ -322,6 +348,7 @@ export class DecoratorManager implements vscode.Disposable {
       locale,
       language,
       formatAnnotationWidth(annotationWidth),
+      usernameDisplayWidth,
       currentAuthor
     );
 
@@ -342,6 +369,7 @@ export class DecoratorManager implements vscode.Disposable {
     this.renderedBlameLines.delete(documentKey);
     this.renderedLineInfo.delete(documentKey);
     this.lastAnnotationWidths.delete(documentKey);
+    this.lastUsernameWidths.delete(documentKey);
     this.currentAuthors.delete(documentKey);
   }
 
@@ -383,12 +411,17 @@ export class DecoratorManager implements vscode.Disposable {
     const config = getExtensionConfig();
     const locale = vscode.env.language || Intl.DateTimeFormat().resolvedOptions().locale;
     const language = resolveDisplayLanguage(config.language, locale);
+
+    const usernameDisplayWidth = this.lastUsernameWidths.get(documentKey) ??
+      calculateUsernameDisplayWidth(lines, config.maxAnnotationWidth);
     const annotationWidth = formatAnnotationWidth(
-      this.lastAnnotationWidths.get(documentKey) ?? calculateAnnotationWidth(lines, config, locale, language)
+      this.lastAnnotationWidths.get(documentKey) ??
+        calculateAnnotationWidth(lines, config, locale, language, usernameDisplayWidth)
     );
+
     const maskedOptions = lines
       .filter((line) => line.isUncommitted)
-      .map((line) => this.createMaskedUncommittedDecorationOption(document, line, config, locale, language, annotationWidth))
+      .map((line) => this.createMaskedUncommittedDecorationOption(document, line, config, locale, language, annotationWidth, usernameDisplayWidth))
       .filter((value): value is vscode.DecorationOptions => value !== undefined);
 
     for (const editor of vscode.window.visibleTextEditors) {
@@ -405,6 +438,7 @@ export class DecoratorManager implements vscode.Disposable {
     locale: string,
     language: ReturnType<typeof resolveDisplayLanguage>,
     annotationWidth: string,
+    usernameDisplayWidth: number,
     currentAuthor?: GitAuthorIdentity
   ): vscode.DecorationOptions | undefined {
     if (line.lineNumber >= document.lineCount) {
@@ -420,7 +454,7 @@ export class DecoratorManager implements vscode.Disposable {
         range,
         renderOptions: {
           before: {
-            contentText: buildUncommittedAnnotationText(config, locale, language),
+            contentText: buildUncommittedAnnotationText(config, locale, language, usernameDisplayWidth),
             color: calculateUncommittedAnnotationColor(config.uncommittedColor),
             backgroundColor: calculateUncommittedAnnotationBackground(config.uncommittedColor),
             margin: `0 ${COLUMN_MARGIN_RIGHT_CH}ch 0 0`,
@@ -451,7 +485,7 @@ export class DecoratorManager implements vscode.Disposable {
       hoverMessage: buildHoverMessage(document.uri, line, language),
       renderOptions: {
         before: {
-          contentText: buildAnnotationText(line, timestampMs, config, locale, language),
+          contentText: buildAnnotationText(line, timestampMs, config, locale, language, usernameDisplayWidth),
           color: annotationColor,
           backgroundColor: annotationBackground,
           margin: `0 ${COLUMN_MARGIN_RIGHT_CH}ch 0 0`,
@@ -468,7 +502,8 @@ export class DecoratorManager implements vscode.Disposable {
     config: GitBlmsConfig,
     locale: string,
     language: ReturnType<typeof resolveDisplayLanguage>,
-    annotationWidth: string
+    annotationWidth: string,
+    usernameDisplayWidth: number
   ): vscode.DecorationOptions | undefined {
     if (!line.isUncommitted || line.lineNumber >= document.lineCount) {
       return undefined;
@@ -479,7 +514,7 @@ export class DecoratorManager implements vscode.Disposable {
       range: getAnnotationRange(textLine),
       renderOptions: {
         before: {
-          contentText: buildUncommittedAnnotationText(config, locale, language),
+          contentText: buildUncommittedAnnotationText(config, locale, language, usernameDisplayWidth),
           color: "rgba(0, 0, 0, 0)",
           backgroundColor: "rgba(0, 0, 0, 0)",
           margin: `0 ${COLUMN_MARGIN_RIGHT_CH}ch 0 0`,
@@ -522,22 +557,24 @@ function buildAnnotationText(
   timestampMs: number,
   config: GitBlmsConfig,
   locale: string,
-  language: ReturnType<typeof resolveDisplayLanguage>
+  language: ReturnType<typeof resolveDisplayLanguage>,
+  usernameDisplayWidth: number
 ): string {
   const dateText = formatCompactTimestamp(timestampMs, config.dateFormat, locale);
-  const authorText = formatUsername(line.author, language);
+  const authorText = formatUsername(line.author, language, usernameDisplayWidth);
   return `${dateText}  ${authorText}`;
 }
 
 function buildUncommittedAnnotationText(
   config: GitBlmsConfig,
   locale: string,
-  language: ReturnType<typeof resolveDisplayLanguage>
+  language: ReturnType<typeof resolveDisplayLanguage>,
+  usernameDisplayWidth: number
 ): string {
   const dateText = formatCompactTimestamp(Date.now(), config.dateFormat, locale);
   const uncommittedText = t(language, "annotation.uncommitted");
-  // Format "Uncommitted" text to fixed width as well
-  const formattedUncommitted = truncateAndPadToDisplayWidth(uncommittedText, USERNAME_DISPLAY_WIDTH);
+  // Format "Uncommitted" text to the same width as username
+  const formattedUncommitted = truncateAndPadToDisplayWidth(uncommittedText, usernameDisplayWidth);
   return `${dateText}  ${formattedUncommitted}`;
 }
 
@@ -569,24 +606,45 @@ function buildHoverMessage(
   return markdown;
 }
 
-// Fixed width for username display: 6 display width
-const USERNAME_DISPLAY_WIDTH = 6;
+/**
+ * Calculate the display width for usernames based on maxAnnotationWidth and actual username lengths.
+ * @param lines - The blame lines to analyze
+ * @param maxAnnotationWidth - The configured maximum annotation width
+ * @returns The calculated username display width
+ */
+function calculateUsernameDisplayWidth(lines: BlameLineInfo[], maxAnnotationWidth: number): number {
+  const fixedWidth = TIME_DISPLAY_WIDTH + SEPARATOR_WIDTH;
+  let maxUsernameWidth = maxAnnotationWidth - fixedWidth;
+
+  // Invalid value check - use default when result is too small
+  if (maxUsernameWidth < 2) {
+    maxUsernameWidth = DEFAULT_MAX_ANNOTATION_WIDTH - fixedWidth; // 10
+  }
+
+  // Find the longest username display width
+  const actualMaxUsername = lines.reduce((max, line) => {
+    const width = getVisualWidth(line.author.trim());
+    return Math.max(max, width);
+  }, 0);
+
+  // Return the smaller of max allowed and actual longest
+  return Math.min(maxUsernameWidth, actualMaxUsername);
+}
 
 /**
- * Format username to fixed display width.
- * - Max 6 display width (3 Chinese chars or 6 English chars)
+ * Format username to a dynamic display width.
  * - Truncate with single ellipsis `…` if needed
  * - Pad with spaces if shorter
  */
-function formatUsername(author: string, language: ReturnType<typeof resolveDisplayLanguage>): string {
+function formatUsername(author: string, language: ReturnType<typeof resolveDisplayLanguage>, displayWidth: number): string {
   const trimmed = author.trim();
   if (!trimmed) {
     // Unknown author - translate then pad to width
     const unknown = t(language, "annotation.unknownAuthor");
-    return truncateAndPadToDisplayWidth(unknown, USERNAME_DISPLAY_WIDTH);
+    return truncateAndPadToDisplayWidth(unknown, displayWidth);
   }
 
-  return truncateAndPadToDisplayWidth(trimmed, USERNAME_DISPLAY_WIDTH);
+  return truncateAndPadToDisplayWidth(trimmed, displayWidth);
 }
 
 /**
@@ -629,18 +687,16 @@ function calculateAnnotationWidth(
   lines: BlameLineInfo[],
   config: GitBlmsConfig,
   locale: string,
-  language: ReturnType<typeof resolveDisplayLanguage>
+  language: ReturnType<typeof resolveDisplayLanguage>,
+  usernameDisplayWidth?: number
 ): number {
-  let maxTextWidth = 0;
+  // Calculate username width if not provided
+  const width = usernameDisplayWidth ?? calculateUsernameDisplayWidth(lines, config.maxAnnotationWidth);
 
-  for (const line of lines) {
-    const text = line.isUncommitted
-      ? buildUncommittedAnnotationText(config, locale, language)
-      : buildAnnotationText(line, line.authorTime * 1000, config, locale, language);
-    maxTextWidth = Math.max(maxTextWidth, getVisualWidth(text));
-  }
+  // Total width = time (10) + separator (2) + username (dynamic)
+  const totalWidth = TIME_DISPLAY_WIDTH + SEPARATOR_WIDTH + width;
 
-  return clamp(maxTextWidth, 0, config.maxAnnotationWidth);
+  return Math.min(totalWidth, config.maxAnnotationWidth);
 }
 
 function formatAnnotationWidth(value: number): string {
@@ -652,30 +708,6 @@ function createRenderedLineInfo(lines: readonly BlameLineInfo[]): Map<number, Bl
     lines
       .filter((line) => !line.isUncommitted)
       .map((line) => [line.lineNumber, line])
-  );
-}
-
-function getVisualWidth(value: string): number {
-  let width = 0;
-
-  for (const char of value) {
-    width += isWideCharacter(char) ? 2 : 1;
-  }
-
-  return width;
-}
-
-function isWideCharacter(char: string): boolean {
-  const codePoint = char.codePointAt(0) ?? 0;
-  return (
-    (codePoint >= 0x1100 && codePoint <= 0x115f) ||
-    (codePoint >= 0x2e80 && codePoint <= 0xa4cf) ||
-    (codePoint >= 0xac00 && codePoint <= 0xd7a3) ||
-    (codePoint >= 0xf900 && codePoint <= 0xfaff) ||
-    (codePoint >= 0xfe10 && codePoint <= 0xfe19) ||
-    (codePoint >= 0xfe30 && codePoint <= 0xfe6f) ||
-    (codePoint >= 0xff00 && codePoint <= 0xff60) ||
-    (codePoint >= 0xffe0 && codePoint <= 0xffe6)
   );
 }
 

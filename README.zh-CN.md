@@ -58,7 +58,7 @@ GitBlms 是一个面向 VS Code 的 Git 追溯注解扩展，目标体验参考 
 | `git-blms.dateFormat` | `"absolute"` | 时间显示格式，可选 `relative` 或 `absolute` |
 | `git-blms.maxLineCount` | `5000` | 大文件保护阈值 |
 | `git-blms.cacheTimeout` | `60000` | blame 缓存时长，单位毫秒 |
-| `git-blms.maxAnnotationWidth` | `22` | 左侧 blame 信息栏最大宽度，单位 `ch` |
+| `git-blms.maxAnnotationWidth` | `22` | 注释区域总宽度（时间 + 分隔符 + 用户名）。时间占 10 个显示宽度，分隔符占 2 个，用户名动态占用剩余空间。 |
 | `git-blms.uncommittedColor` | `"46,160,67"` | 未提交行颜色，支持 CSV、`rgb(...)` 和十六进制 |
 | `git-blms.currentAuthorColor` | `""` | 当前 Git 用户提交代码的高亮色。留空表示关闭，同时保留代码年龄色阶 |
 | `git-blms.language` | `"auto"` | 插件显示语言，可选 `auto`、`zh-CN`、`en` |

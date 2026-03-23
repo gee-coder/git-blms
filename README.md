@@ -58,7 +58,7 @@ Default keybinding:
 | `git-blms.dateFormat` | `"absolute"` | `relative` or `absolute` timestamp display |
 | `git-blms.maxLineCount` | `5000` | Skip blame rendering for very large files |
 | `git-blms.cacheTimeout` | `60000` | Blame cache lifetime in milliseconds |
-| `git-blms.maxAnnotationWidth` | `22` | Maximum width of the blame column in `ch` |
+| `git-blms.maxAnnotationWidth` | `22` | Maximum total width of the annotation (time + separator + username). Time uses 10 display width, separator uses 2. Username uses the remaining space dynamically. |
 | `git-blms.uncommittedColor` | `"#2ea043"` | Color for uncommitted lines. Use hex to get a picker or inline preview in Settings |
 | `git-blms.highlightCurrentAuthor` | `false` | Highlights lines authored by the current Git user with a separate accent color |
 | `git-blms.currentAuthorColor` | `"#d97706"` | Accent color for current-user committed lines. Use hex to get a picker or inline preview in Settings |
