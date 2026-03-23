@@ -57,3 +57,4 @@ export async function updateEnabledContext(enabled: boolean): Promise<void> {
 function getConfiguredValue<T>(inspection: ConfigurationInspectionLike<T> | undefined): T | undefined {
   return inspection?.workspaceFolderValue ?? inspection?.workspaceValue ?? inspection?.globalValue;
 }
+

@@ -110,14 +110,25 @@ export class BlameManager {
     const base = document.uri.toString();
 
     if (document.isDirty) {
+      // Dirty files: use document version, don't need HEAD hash
       return `${base}::dirty::${document.version}`;
     }
 
     try {
       const stats = await fs.stat(document.uri.fsPath);
-      return `${base}::saved::${stats.mtimeMs}`;
+
+      // For saved files, try to get HEAD hash for cache invalidation
+      const repoRoot = await this.gitService.resolveRepoRoot(document.uri.fsPath);
+      const headHash = repoRoot ? await this.gitService.getHeadHash(repoRoot) : undefined;
+
+      if (headHash) {
+        return `${base}::saved::${stats.mtimeMs}::${headHash}`;
+      }
+
+      // Fallback if HEAD cannot be retrieved (e.g., not in git repo yet)
+      return `${base}::saved::${stats.mtimeMs}::no-head`;
     } catch {
-      return `${base}::saved::${document.version}`;
+      return `${base}::saved::${document.version}::no-head`;
     }
   }
 }

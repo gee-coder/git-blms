@@ -525,7 +525,7 @@ function buildAnnotationText(
   language: ReturnType<typeof resolveDisplayLanguage>
 ): string {
   const dateText = formatCompactTimestamp(timestampMs, config.dateFormat, locale);
-  const authorText = truncateAuthor(line.author, language);
+  const authorText = formatUsername(line.author, language);
   return `${dateText}  ${authorText}`;
 }
 
@@ -535,7 +535,10 @@ function buildUncommittedAnnotationText(
   language: ReturnType<typeof resolveDisplayLanguage>
 ): string {
   const dateText = formatCompactTimestamp(Date.now(), config.dateFormat, locale);
-  return `${dateText}  ${t(language, "annotation.uncommitted")}`;
+  const uncommittedText = t(language, "annotation.uncommitted");
+  // Format "Uncommitted" text to fixed width as well
+  const formattedUncommitted = truncateAndPadToDisplayWidth(uncommittedText, USERNAME_DISPLAY_WIDTH);
+  return `${dateText}  ${formattedUncommitted}`;
 }
 
 function buildHoverMessage(
@@ -566,13 +569,56 @@ function buildHoverMessage(
   return markdown;
 }
 
-function truncateAuthor(author: string, language: ReturnType<typeof resolveDisplayLanguage>): string {
+// Fixed width for username display: 6 display width
+const USERNAME_DISPLAY_WIDTH = 6;
+
+/**
+ * Format username to fixed display width.
+ * - Max 6 display width (3 Chinese chars or 6 English chars)
+ * - Truncate with single ellipsis `…` if needed
+ * - Pad with spaces if shorter
+ */
+function formatUsername(author: string, language: ReturnType<typeof resolveDisplayLanguage>): string {
   const trimmed = author.trim();
   if (!trimmed) {
-    return t(language, "annotation.unknownAuthor");
+    // Unknown author - translate then pad to width
+    const unknown = t(language, "annotation.unknownAuthor");
+    return truncateAndPadToDisplayWidth(unknown, USERNAME_DISPLAY_WIDTH);
   }
 
-  return trimmed.length > 14 ? `${trimmed.slice(0, 13)}…` : trimmed;
+  return truncateAndPadToDisplayWidth(trimmed, USERNAME_DISPLAY_WIDTH);
+}
+
+/**
+ * Truncate text to a target display width and pad with spaces.
+ * Chinese characters count as 2, English as 1.
+ * Uses single ellipsis `…` (1 display width) for truncation.
+ */
+function truncateAndPadToDisplayWidth(text: string, targetWidth: number): string {
+  const displayWidth = getVisualWidth(text);
+
+  if (displayWidth <= targetWidth) {
+    // Pad with spaces to reach target width
+    const spaceCount = targetWidth - displayWidth;
+    return text + " ".repeat(spaceCount);
+  }
+
+  // Need to truncate - calculate how much to keep
+  // We need targetWidth - 1 for the ellipsis
+  const contentWidth = targetWidth - 1;
+  let keptWidth = 0;
+  let keptText = "";
+
+  for (const char of text) {
+    const charWidth = isWideCharacter(char) ? 2 : 1;
+    if (keptWidth + charWidth > contentWidth) {
+      break;
+    }
+    keptText += char;
+    keptWidth += charWidth;
+  }
+
+  return keptText + "…";
 }
 
 function escapeMarkdown(value: string): string {
