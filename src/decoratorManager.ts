@@ -44,6 +44,9 @@ export class DecoratorManager implements vscode.Disposable {
   private readonly currentAuthors = new Map<string, GitAuthorIdentity | undefined>();
   // Cache for gutter decoration types by color
   private readonly gutterDecorationTypes = new Map<string, vscode.TextEditorDecorationType>();
+  // Two independent display toggles
+  private gutterEnabled = true;
+  private annotationEnabled = true;
 
   constructor(private readonly blameManager: BlameManager) {}
 
@@ -193,6 +196,38 @@ export class DecoratorManager implements vscode.Disposable {
 
   getLineInfo(uri: vscode.Uri, lineNumber: number): BlameLineInfo | undefined {
     return this.renderedLineInfo.get(uri.toString())?.get(lineNumber);
+  }
+
+  /**
+   * Set whether gutter decorations are shown.
+   * @param enabled - Whether to show gutter decorations
+   */
+  setGutterEnabled(enabled: boolean): void {
+    this.gutterEnabled = enabled;
+    void this.refreshVisibleEditors();
+  }
+
+  /**
+   * Set whether inline annotations are shown.
+   * @param enabled - Whether to show inline annotations
+   */
+  setAnnotationEnabled(enabled: boolean): void {
+    this.annotationEnabled = enabled;
+    void this.refreshVisibleEditors();
+  }
+
+  /**
+   * Get whether gutter decorations are enabled.
+   */
+  isGutterEnabled(): boolean {
+    return this.gutterEnabled;
+  }
+
+  /**
+   * Get whether inline annotations are enabled.
+   */
+  isAnnotationEnabled(): boolean {
+    return this.annotationEnabled;
   }
 
   /**
@@ -445,13 +480,17 @@ export class DecoratorManager implements vscode.Disposable {
       gutterByColor: Map<string, vscode.DecorationOptions[]>
     }
   ): void {
-    editor.setDecorations(this.committedDecorationType, options.committed);
-    editor.setDecorations(this.uncommittedDecorationType, options.uncommitted);
-
-    // Set gutter decorations by color
-    for (const [color, decorations] of options.gutterByColor) {
-      const decorationType = this.getOrCreateGutterDecorationType(color);
-      editor.setDecorations(decorationType, decorations);
+    // Set gutter decorations if enabled
+    if (this.gutterEnabled) {
+      for (const [color, decorations] of options.gutterByColor) {
+        const decorationType = this.getOrCreateGutterDecorationType(color);
+        editor.setDecorations(decorationType, decorations);
+      }
+    } else {
+      // Clear all gutter decorations if disabled
+      for (const [color, decorationType] of this.gutterDecorationTypes) {
+        editor.setDecorations(decorationType, []);
+      }
     }
 
     // Clear any gutter decorations that are no longer needed
@@ -460,6 +499,16 @@ export class DecoratorManager implements vscode.Disposable {
       if (!usedColors.has(color)) {
         editor.setDecorations(decorationType, []);
       }
+    }
+
+    // Set inline decorations based on annotation enabled state
+    if (this.annotationEnabled) {
+      editor.setDecorations(this.committedDecorationType, options.committed);
+      editor.setDecorations(this.uncommittedDecorationType, options.uncommitted);
+    } else {
+      // Clear inline decorations if disabled
+      editor.setDecorations(this.committedDecorationType, []);
+      editor.setDecorations(this.uncommittedDecorationType, []);
     }
   }
 
