@@ -3,12 +3,16 @@ import { BlameManager } from "./blameManager";
 import {
   affectsGitBlmsConfiguration,
   COMMAND_HIDE_BLAME,
+  COMMAND_HIDE_GUTTER,
   COMMAND_OPEN_COMMIT_DETAILS,
   COMMAND_SHOW_BLAME,
+  COMMAND_SHOW_GUTTER,
   COMMAND_TOGGLE_BLAME,
   getExtensionConfig,
   setEnabled,
-  updateEnabledContext
+  updateAnnotationEnabledContext,
+  updateEnabledContext,
+  updateGutterEnabledContext
 } from "./config";
 import { DecoratorManager } from "./decoratorManager";
 import { GitService } from "./gitService";
@@ -30,16 +34,36 @@ export function activate(context: vscode.ExtensionContext): void {
     await setEnabled(!getExtensionConfig().enabled);
   });
 
+  // Show Blame - enables inline annotations (independent of gutter)
   registerCommand(COMMAND_SHOW_BLAME, async () => {
-    if (!getExtensionConfig().enabled) {
+    const config = getExtensionConfig();
+    if (!config.enabled) {
       await setEnabled(true);
     }
+    decoratorManager.setAnnotationEnabled(true);
+    await updateAnnotationEnabledContext(true);
   });
 
+  // Hide Blame - disables inline annotations (independent of gutter)
   registerCommand(COMMAND_HIDE_BLAME, async () => {
-    if (getExtensionConfig().enabled) {
-      await setEnabled(false);
+    decoratorManager.setAnnotationEnabled(false);
+    await updateAnnotationEnabledContext(false);
+  });
+
+  // Show Gutter - enables gutter color indicators (independent of blame)
+  registerCommand(COMMAND_SHOW_GUTTER, async () => {
+    const config = getExtensionConfig();
+    if (!config.enabled) {
+      await setEnabled(true);
     }
+    decoratorManager.setGutterEnabled(true);
+    await updateGutterEnabledContext(true);
+  });
+
+  // Hide Gutter - disables gutter color indicators (independent of blame)
+  registerCommand(COMMAND_HIDE_GUTTER, async () => {
+    decoratorManager.setGutterEnabled(false);
+    await updateGutterEnabledContext(false);
   });
 
   registerCommand(COMMAND_OPEN_COMMIT_DETAILS, async (...args: unknown[]) => {
@@ -120,6 +144,11 @@ async function initialize(decoratorManager: DecoratorManager): Promise<void> {
   await updateEnabledContext(enabled);
 
   if (enabled) {
+    // Set initial state: both gutter and annotations enabled
+    decoratorManager.setGutterEnabled(true);
+    decoratorManager.setAnnotationEnabled(true);
+    await updateGutterEnabledContext(true);
+    await updateAnnotationEnabledContext(true);
     await decoratorManager.refreshVisibleEditors();
   }
 }

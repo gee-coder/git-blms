@@ -3,6 +3,8 @@
   "command.toggleBlame.title": "Toggle Inline Git Blame",
   "command.showBlame.title": "Show Inline Git Blame",
   "command.hideBlame.title": "Hide Inline Git Blame",
+  "command.showGutter.title": "Show Git Gutter",
+  "command.hideGutter.title": "Hide Git Gutter",
   "command.openCommitDetails.title": "Open Commit Details",
   "configuration.title": "GitBlms",
   "config.enabled.description": "Enable or disable inline Git blame annotations globally.",

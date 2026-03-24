@@ -3,6 +3,8 @@
   "command.toggleBlame.title": "切换行内追溯注解",
   "command.showBlame.title": "显示行内追溯注解",
   "command.hideBlame.title": "隐藏行内追溯注解",
+  "command.showGutter.title": "显示 Git 颜色",
+  "command.hideGutter.title": "隐藏 Git 颜色",
   "command.openCommitDetails.title": "查看当前行提交详情",
   "configuration.title": "GitBlms",
   "config.enabled.description": "全局启用或关闭行内 Git 追溯注解。",

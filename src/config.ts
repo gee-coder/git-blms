@@ -3,10 +3,14 @@ import type { GitBlmsConfig } from "./types";
 
 export const EXTENSION_SECTION = "git-blms";
 export const CONTEXT_ENABLED = "gitBlms.enabled";
+export const CONTEXT_GUTTER_ENABLED = "gitBlms.gutterEnabled";
+export const CONTEXT_ANNOTATION_ENABLED = "gitBlms.annotationEnabled";
 
 export const COMMAND_TOGGLE_BLAME = "git-blms.toggleBlame";
 export const COMMAND_SHOW_BLAME = "git-blms.showBlame";
 export const COMMAND_HIDE_BLAME = "git-blms.hideBlame";
+export const COMMAND_SHOW_GUTTER = "git-blms.showGutter";
+export const COMMAND_HIDE_GUTTER = "git-blms.hideGutter";
 export const COMMAND_OPEN_COMMIT_DETAILS = "git-blms.openCommitDetails";
 
 interface ConfigurationInspectionLike<T> {
@@ -52,6 +56,14 @@ export function affectsGitBlmsConfiguration(event: vscode.ConfigurationChangeEve
 
 export async function updateEnabledContext(enabled: boolean): Promise<void> {
   await vscode.commands.executeCommand("setContext", CONTEXT_ENABLED, enabled);
+}
+
+export async function updateGutterEnabledContext(enabled: boolean): Promise<void> {
+  await vscode.commands.executeCommand("setContext", CONTEXT_GUTTER_ENABLED, enabled);
+}
+
+export async function updateAnnotationEnabledContext(enabled: boolean): Promise<void> {
+  await vscode.commands.executeCommand("setContext", CONTEXT_ANNOTATION_ENABLED, enabled);
 }
 
 function getConfiguredValue<T>(inspection: ConfigurationInspectionLike<T> | undefined): T | undefined {

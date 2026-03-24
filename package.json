@@ -39,6 +39,8 @@
     "onCommand:git-blms.toggleBlame",
     "onCommand:git-blms.showBlame",
     "onCommand:git-blms.hideBlame",
+    "onCommand:git-blms.showGutter",
+    "onCommand:git-blms.hideGutter",
     "onCommand:git-blms.openCommitDetails"
   ],
   "main": "./out/extension.js",
@@ -60,6 +62,16 @@
         "category": "Git"
       },
       {
+        "command": "git-blms.showGutter",
+        "title": "%command.showGutter.title%",
+        "category": "Git"
+      },
+      {
+        "command": "git-blms.hideGutter",
+        "title": "%command.hideGutter.title%",
+        "category": "Git"
+      },
+      {
         "command": "git-blms.openCommitDetails",
         "title": "%command.openCommitDetails.title%",
         "category": "Git"
@@ -77,12 +89,22 @@
       "editor/context": [
         {
           "command": "git-blms.showBlame",
-          "when": "resourceScheme == file && !gitBlms.enabled",
+          "when": "resourceScheme == file && !gitBlms.annotationEnabled",
           "group": "navigation@git-blame"
         },
         {
           "command": "git-blms.hideBlame",
-          "when": "resourceScheme == file && gitBlms.enabled",
+          "when": "resourceScheme == file && gitBlms.annotationEnabled",
+          "group": "navigation@git-blame"
+        },
+        {
+          "command": "git-blms.showGutter",
+          "when": "resourceScheme == file && !gitBlms.gutterEnabled",
+          "group": "navigation@git-blame"
+        },
+        {
+          "command": "git-blms.hideGutter",
+          "when": "resourceScheme == file && gitBlms.gutterEnabled",
           "group": "navigation@git-blame"
         },
         {
@@ -94,12 +116,22 @@
       "editor/lineNumber/context": [
         {
           "command": "git-blms.showBlame",
-          "when": "resourceScheme == file && !gitBlms.enabled",
+          "when": "resourceScheme == file && !gitBlms.annotationEnabled",
           "group": "navigation@git-blame"
         },
         {
           "command": "git-blms.hideBlame",
-          "when": "resourceScheme == file && gitBlms.enabled",
+          "when": "resourceScheme == file && gitBlms.annotationEnabled",
+          "group": "navigation@git-blame"
+        },
+        {
+          "command": "git-blms.showGutter",
+          "when": "resourceScheme == file && !gitBlms.gutterEnabled",
+          "group": "navigation@git-blame"
+        },
+        {
+          "command": "git-blms.hideGutter",
+          "when": "resourceScheme == file && gitBlms.gutterEnabled",
           "group": "navigation@git-blame"
         }
       ]
