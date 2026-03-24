@@ -66,6 +66,26 @@ export async function updateAnnotationEnabledContext(enabled: boolean): Promise<
   await vscode.commands.executeCommand("setContext", CONTEXT_ANNOTATION_ENABLED, enabled);
 }
 
+export async function clearEnabledContext(): Promise<void> {
+  await vscode.commands.executeCommand("setContext", CONTEXT_ENABLED, false);
+}
+
+export async function clearGutterEnabledContext(): Promise<void> {
+  await vscode.commands.executeCommand("setContext", CONTEXT_GUTTER_ENABLED, false);
+}
+
+export async function clearAnnotationEnabledContext(): Promise<void> {
+  await vscode.commands.executeCommand("setContext", CONTEXT_ANNOTATION_ENABLED, false);
+}
+
+export async function clearAllContextKeys(): Promise<void> {
+  await Promise.all([
+    vscode.commands.executeCommand("setContext", CONTEXT_ENABLED, false),
+    vscode.commands.executeCommand("setContext", CONTEXT_GUTTER_ENABLED, false),
+    vscode.commands.executeCommand("setContext", CONTEXT_ANNOTATION_ENABLED, false)
+  ]);
+}
+
 function getConfiguredValue<T>(inspection: ConfigurationInspectionLike<T> | undefined): T | undefined {
   return inspection?.workspaceFolderValue ?? inspection?.workspaceValue ?? inspection?.globalValue;
 }

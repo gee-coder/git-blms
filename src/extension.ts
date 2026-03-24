@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { BlameManager } from "./blameManager";
 import {
   affectsGitBlmsConfiguration,
+  clearAllContextKeys,
   COMMAND_HIDE_BLAME,
   COMMAND_HIDE_GUTTER,
   COMMAND_OPEN_COMMIT_DETAILS,
@@ -18,13 +19,18 @@ import { DecoratorManager } from "./decoratorManager";
 import { GitService } from "./gitService";
 import { resolveDisplayLanguage, t } from "./i18n";
 
+let decoratorManager: DecoratorManager | undefined;
+
 export function activate(context: vscode.ExtensionContext): void {
   const outputChannel = vscode.window.createOutputChannel("GitBlms");
   const gitService = new GitService();
   const blameManager = new BlameManager(gitService);
-  const decoratorManager = new DecoratorManager(blameManager);
+  decoratorManager = new DecoratorManager(blameManager);
 
-  context.subscriptions.push(outputChannel, decoratorManager);
+  // Use non-null assertion since decoratorManager is assigned above
+  const dm = decoratorManager!;
+
+  context.subscriptions.push(outputChannel, dm);
 
   const registerCommand = (command: string, callback: (...args: unknown[]) => unknown): void => {
     context.subscriptions.push(vscode.commands.registerCommand(command, callback));
@@ -40,13 +46,13 @@ export function activate(context: vscode.ExtensionContext): void {
     if (!config.enabled) {
       await setEnabled(true);
     }
-    decoratorManager.setAnnotationEnabled(true);
+    dm.setAnnotationEnabled(true);
     await updateAnnotationEnabledContext(true);
   });
 
   // Hide Blame - disables inline annotations (independent of gutter)
   registerCommand(COMMAND_HIDE_BLAME, async () => {
-    decoratorManager.setAnnotationEnabled(false);
+    dm.setAnnotationEnabled(false);
     await updateAnnotationEnabledContext(false);
   });
 
@@ -56,19 +62,19 @@ export function activate(context: vscode.ExtensionContext): void {
     if (!config.enabled) {
       await setEnabled(true);
     }
-    decoratorManager.setGutterEnabled(true);
+    dm.setGutterEnabled(true);
     await updateGutterEnabledContext(true);
   });
 
   // Hide Gutter - disables gutter color indicators (independent of blame)
   registerCommand(COMMAND_HIDE_GUTTER, async () => {
-    decoratorManager.setGutterEnabled(false);
+    dm.setGutterEnabled(false);
     await updateGutterEnabledContext(false);
   });
 
   registerCommand(COMMAND_OPEN_COMMIT_DETAILS, async (...args: unknown[]) => {
     const language = getResolvedLanguage();
-    const resolution = resolveCommitRequest(args, decoratorManager);
+    const resolution = resolveCommitRequest(args, dm);
     if (!resolution) {
       void vscode.window.showInformationMessage(t(language, "message.noCommitInfo"));
       return;
@@ -97,24 +103,24 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
 
-  void registerDeleteCommandProxy(context, decoratorManager, "deleteLeft", "default:deleteLeft", "left");
-  void registerDeleteCommandProxy(context, decoratorManager, "deleteRight", "default:deleteRight", "right");
+  void registerDeleteCommandProxy(context, dm, "deleteLeft", "default:deleteLeft", "left");
+  void registerDeleteCommandProxy(context, dm, "deleteRight", "default:deleteRight", "right");
 
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
-      void decoratorManager.refreshEditor(editor);
+      void dm.refreshEditor(editor);
     }),
     vscode.window.onDidChangeVisibleTextEditors(() => {
-      void decoratorManager.refreshVisibleEditors();
+      void dm.refreshVisibleEditors();
     }),
     vscode.workspace.onDidChangeTextDocument((event) => {
-      decoratorManager.scheduleRefresh(event.document, event.contentChanges);
+      dm.scheduleRefresh(event.document, event.contentChanges);
     }),
     vscode.workspace.onDidSaveTextDocument((document) => {
-      decoratorManager.handleDocumentSaved(document);
+      dm.handleDocumentSaved(document);
     }),
     vscode.workspace.onDidCloseTextDocument((document) => {
-      decoratorManager.handleDocumentClosed(document);
+      dm.handleDocumentClosed(document);
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (!affectsGitBlmsConfiguration(event)) {
@@ -125,19 +131,27 @@ export function activate(context: vscode.ExtensionContext): void {
       void updateEnabledContext(enabled);
 
       if (!enabled) {
-        decoratorManager.clearAllEditors();
+        dm.clearAllEditors();
         blameManager.clearAll();
         return;
       }
 
-      decoratorManager.handleConfigurationChanged();
+      dm.handleConfigurationChanged();
     })
   );
 
-  void initialize(decoratorManager);
+  void initialize(dm);
 }
 
-export function deactivate(): void {}
+export function deactivate(): void {
+  // Clear all context keys to hide menu items immediately
+  void clearAllContextKeys();
+
+  // Clear all decorations from visible editors
+  if (decoratorManager) {
+    decoratorManager.clearAllEditors();
+  }
+}
 
 async function initialize(decoratorManager: DecoratorManager): Promise<void> {
   const enabled = getExtensionConfig().enabled;
