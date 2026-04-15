@@ -722,14 +722,23 @@ function calculateUsernameDisplayWidth(lines: BlameLineInfo[], maxAnnotationWidt
     maxUsernameWidth = DEFAULT_MAX_ANNOTATION_WIDTH - fixedWidth; // 10
   }
 
-  // Find the longest username display width
+  // Find the longest username display width, excluding uncommitted lines.
+  // Uncommitted lines from git blame have author "Not Committed Yet" (16 chars),
+  // but are displayed as "未提交"/"Uncommitted" which is much shorter.
+  // Including them would inflate the annotation width unnecessarily.
   const actualMaxUsername = lines.reduce((max, line) => {
+    if (line.isUncommitted) {
+      return max;
+    }
     const width = getVisualWidth(line.author.trim());
     return Math.max(max, width);
   }, 0);
 
-  // Return the smaller of max allowed and actual longest
-  return Math.min(maxUsernameWidth, actualMaxUsername);
+  // Ensure minimum width for uncommitted text display ("未提交" = 6, "Uncommitted" = 10)
+  const effectiveMaxUsername = Math.max(actualMaxUsername, 6);
+
+  // Return the smaller of max allowed and effective longest
+  return Math.min(maxUsernameWidth, effectiveMaxUsername);
 }
 
 /**

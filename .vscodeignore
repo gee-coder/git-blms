@@ -1,6 +1,11 @@
 .git/**
 .vscode/**
 .github/**
+.idea/**
+.workbuddy/**
+.claude/**
+.cursor/**
+openspec/**
 node_modules/**
 src/**
 out/test/**
