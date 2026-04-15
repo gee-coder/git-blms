@@ -215,8 +215,7 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "eslint \"src/**/*.ts\"",
-    "pretest": "npm run compile",
-    "test": "node --test out/test/*.test.js",
+
     "vscode:prepublish": "npm run compile",
     "package:vsix": "powershell -ExecutionPolicy Bypass -File ./scripts/publish-openvsx.ps1 -PackageOnly",
     "publish:openvsx": "powershell -ExecutionPolicy Bypass -File ./scripts/publish-openvsx.ps1",

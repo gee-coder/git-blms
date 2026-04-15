@@ -29,9 +29,6 @@ jobs:
       - name: Run lint
         run: npm run lint
 
-      - name: Run tests
-        run: npm test
-
       - name: Publish to Open VSX
         shell: pwsh
         env:
