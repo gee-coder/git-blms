@@ -115,10 +115,13 @@ export class DecoratorManager implements vscode.Disposable {
     this.blameManager.invalidateDocument(document);
     const hasLineDeletion = hasStructuralLineDeletion(contentChanges);
 
-    if (!hasLineDeletion && hasStructuralLineChange(contentChanges)) {
-      this.applyTransientDecorations(document, contentChanges);
-    } else if (hasLineDeletion) {
-      this.applyTransientUncommittedDecorations(document, contentChanges);
+    // Only apply transient decorations when at least one display feature is enabled
+    if (this.gutterEnabled || this.annotationEnabled) {
+      if (!hasLineDeletion && hasStructuralLineChange(contentChanges)) {
+        this.applyTransientDecorations(document, contentChanges);
+      } else if (hasLineDeletion) {
+        this.applyTransientUncommittedDecorations(document, contentChanges);
+      }
     }
 
     const pending = this.pendingRefreshes.get(documentKey);
