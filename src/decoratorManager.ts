@@ -477,7 +477,7 @@ export class DecoratorManager implements vscode.Disposable {
       }
     } else {
       // Clear all gutter decorations if disabled
-      for (const [color, decorationType] of this.gutterDecorationTypes) {
+      for (const [_color, decorationType] of this.gutterDecorationTypes) {
         editor.setDecorations(decorationType, []);
       }
     }
